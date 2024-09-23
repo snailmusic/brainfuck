@@ -2,6 +2,13 @@ const std = @import("std");
 const builtin = @import("builtin");
 
 pub fn main() !void {
+    var argbuffer: [2048]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(&argbuffer);
+    var args = try std.process.argsWithAllocator(fba.allocator());
+    defer args.deinit();
+    _ = args.skip();
+    const filename = args.next() orelse "main.bf";
+
     // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
 
     // stdout is for the actual output of your application, for example if you
@@ -16,7 +23,7 @@ pub fn main() !void {
     const stdin = br.reader();
 
     const cwd = std.fs.cwd();
-    const inFile = try cwd.openFile("main.bf", .{ .mode = .read_only });
+    const inFile = try cwd.openFile(filename, .{ .mode = .read_only });
     const inReader = inFile.reader();
 
     var buffer: [1024]u8 = undefined;
