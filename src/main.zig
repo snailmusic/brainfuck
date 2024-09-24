@@ -79,10 +79,31 @@ pub fn main() !void {
                 if (builtin.mode == std.builtin.OptimizeMode.Debug) std.debug.print("{d}\n", .{tape_pointer});
             },
             '[' => {
-                stack[stack_pointer] = code_pointer;
-                stack_pointer += 1;
-                if (stack_pointer >= stack.len) {
-                    return error.StackOverflow;
+                if (tape[tape_pointer] != 0) {
+                    stack[stack_pointer] = code_pointer;
+                    stack_pointer += 1;
+                    if (stack_pointer >= stack.len) {
+                        return error.StackOverflow;
+                    }
+                    std.debug.print("jumping", .{});
+                } else {
+                    // screw you. u24s ur counter
+                    var counter: u24 = 1;
+                    var target: usize = 0;
+                    for ((code_pointer + 1)..buffer.len) |i| {
+                        if (buffer[i] == '[') {
+                            counter += 1;
+                        }
+                        if (buffer[i] == ']') {
+                            counter -= 1;
+                        }
+                        if (counter == 0) {
+                            target = i;
+                            if (builtin.mode == std.builtin.OptimizeMode.Debug) std.debug.print("jumping to {d} from {d}\n", .{ target, code_pointer });
+                            break;
+                        }
+                    }
+                    code_pointer = target;
                 }
             },
             ']' => {
