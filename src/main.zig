@@ -1,6 +1,10 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
+fn dbg_print(comptime format: []const u8, args: anytype) void {
+    if (builtin.mode == std.builtin.OptimizeMode.Debug) std.debug.print(format, args);
+}
+
 pub fn main() !void {
     var argbuffer: [2048]u8 = undefined;
     var fba = std.heap.FixedBufferAllocator.init(&argbuffer);
@@ -26,10 +30,10 @@ pub fn main() !void {
     const inFile = try cwd.openFile(filename, .{ .mode = .read_only });
     const inReader = inFile.reader();
 
-    var buffer: [1024]u8 = undefined;
+    var buffer: [4096]u8 = undefined;
     @memset(buffer[0..], 0);
     _ = try inReader.readAll(buffer[0..]);
-    if (builtin.mode == std.builtin.OptimizeMode.Debug) try stdout.print("{s}\n", .{buffer});
+    dbg_print("{s}\n", .{buffer});
 
     try bw.flush(); // don't forget to flush!
 
@@ -51,32 +55,32 @@ pub fn main() !void {
             '+' => {
                 tape[tape_pointer] = tape[tape_pointer] +% 1;
 
-                if (builtin.mode == std.builtin.OptimizeMode.Debug) std.debug.print("{d}: {d}\n", .{ tape_pointer, tape[tape_pointer] });
+                dbg_print("{d}: {d}\n", .{ tape_pointer, tape[tape_pointer] });
             },
             '-' => {
                 tape[tape_pointer] = tape[tape_pointer] -% 1;
 
-                if (builtin.mode == std.builtin.OptimizeMode.Debug) std.debug.print("{d}: {d}\n", .{ tape_pointer, tape[tape_pointer] });
+                dbg_print("{d}: {d}\n", .{ tape_pointer, tape[tape_pointer] });
             },
             '>' => {
-                if (builtin.mode == std.builtin.OptimizeMode.Debug) std.debug.print("{d} -> ", .{tape_pointer});
+                dbg_print("{d} -> ", .{tape_pointer});
                 if (tape_pointer + 1 == tape.len) {
                     tape_pointer = 0;
                 } else {
                     tape_pointer += 1;
                 }
 
-                if (builtin.mode == std.builtin.OptimizeMode.Debug) std.debug.print("{d}\n", .{tape_pointer});
+                dbg_print("{d}\n", .{tape_pointer});
             },
             '<' => {
-                if (builtin.mode == std.builtin.OptimizeMode.Debug) std.debug.print("{d} -> ", .{tape_pointer});
+                dbg_print("{d} -> ", .{tape_pointer});
                 if (tape_pointer == 0) {
                     tape_pointer = tape.len - 1;
                 } else {
                     tape_pointer -= 1;
                 }
 
-                if (builtin.mode == std.builtin.OptimizeMode.Debug) std.debug.print("{d}\n", .{tape_pointer});
+                dbg_print("{d}\n", .{tape_pointer});
             },
             '[' => {
                 if (tape[tape_pointer] != 0) {
@@ -98,7 +102,7 @@ pub fn main() !void {
                         }
                         if (counter == 0) {
                             target = i;
-                            if (builtin.mode == std.builtin.OptimizeMode.Debug) std.debug.print("jumping to {d} from {d}\n", .{ target, code_pointer });
+                            dbg_print("jumping to {d} from {d}\n", .{ target, code_pointer });
                             break;
                         }
                     }
@@ -125,17 +129,16 @@ pub fn main() !void {
             ',' => {
                 tape[tape_pointer] = try stdin.readByte();
             },
+            // put next character on tape
+            '\'' => {
+                code_pointer += 1;
+                tape[tape_pointer] = buffer[code_pointer];
+                dbg_print("{d} = {d}\n", .{ tape_pointer, buffer[code_pointer] });
+            },
             else => {},
         }
 
         code_pointer += 1;
     }
     try bw.flush();
-}
-
-test "simple test" {
-    var list = std.ArrayList(i32).init(std.testing.allocator);
-    defer list.deinit(); // try commenting this out and see if zig detects the memory leak!
-    try list.append(42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
 }
