@@ -29,7 +29,7 @@ pub fn main() !void {
     var buffer: [1024]u8 = undefined;
     @memset(buffer[0..], 0);
     _ = try inReader.readAll(buffer[0..]);
-    try stdout.print("{s}\n", .{buffer});
+    if (builtin.mode == std.builtin.OptimizeMode.Debug) try stdout.print("{s}\n", .{buffer});
 
     try bw.flush(); // don't forget to flush!
 
@@ -85,7 +85,6 @@ pub fn main() !void {
                     if (stack_pointer >= stack.len) {
                         return error.StackOverflow;
                     }
-                    std.debug.print("jumping", .{});
                 } else {
                     // screw you. u24s ur counter
                     var counter: u24 = 1;
